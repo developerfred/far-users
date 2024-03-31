@@ -149,5 +149,92 @@ export const resolvers = {
         throw new Error("Internal error processing getPfpByAddress.");
       }
     },
+
+  
+    getFnamesByAddress: async (
+      _: unknown,
+      { address }: { address: string }
+    ): Promise<{ fid: number; fname: string; name: string }[] | null> => {
+      console.log("getFnamesByAddress query started for address:", address);
+      try {
+        const { data: addressesData, error: addressError } = await supabase
+          .from("address")
+          .select("fid")
+          .eq("address", address);
+
+        if (addressError) {
+          console.error("Error searching for fid based on address:", addressError);
+          throw new Error(addressError.message);
+        }
+
+        if (!addressesData || addressesData.length === 0) {
+          console.log("No fid found for the provided address.");
+          return null;
+        }
+
+        const fnamesData = await Promise.all(
+          addressesData.map(async ({ fid }) => {
+            const { data: fnames, error: fnamesError } = await supabase
+              .from("fnames")
+              .select("*")
+              .eq("fid", fid);
+
+            if (fnamesError) {
+              console.error("Error searching for full names with fid:", fnamesError);
+              throw new Error(fnamesError.message);
+            }
+
+            return fnames;
+          })
+        );
+
+        console.log("Fname found:", fnamesData.flat());
+        return fnamesData.flat();
+      } catch (error: any) {
+        console.error("Error processing getFnamesByAddress:", error);
+        throw new Error("Internal error processing getFnamesByAddress.");
+      }
+    },
+
+    getAddressesByFname: async (
+      _: unknown,
+      { fname }: { fname: string }
+    ): Promise<Address[] | null> => {
+      console.log("getAddressesByFname query started for full name:", fname);
+      try {
+        const { data: fnamesData, error: fnameError } = await supabase
+          .from("fnames")
+          .select("fid")
+          .eq("fname", fname)
+          .maybeSingle();
+
+        if (fnameError) {
+          console.error("Error searching for fid based on full name:", fnameError);
+          throw new Error(fnameError.message);
+        }
+
+        if (!fnamesData) {
+          console.log("No fid found for the provided full name.");
+          return null;
+        }
+        
+        const { data: addresses, error: addressesError } = await supabase
+          .from("address")
+          .select("*")
+          .eq("fid", fnamesData.fid);
+
+        if (addressesError) {
+          console.error("Error searching for addresses with fid:", addressesError);
+          throw new Error(addressesError.message);
+        }
+
+        console.log("Addresses found:", addresses);
+        return addresses;
+      } catch (error: any) {
+        console.error("Error processing getAddressesByFname:", error);
+        throw new Error("Internal error processing getAddressesByFname.");
+      }
+    },
+
   },
 };
