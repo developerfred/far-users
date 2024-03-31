@@ -60,7 +60,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="hover:underline"
             >
-              Warcast
+              WarpCast
             </a>
           </Link>
         </div>
